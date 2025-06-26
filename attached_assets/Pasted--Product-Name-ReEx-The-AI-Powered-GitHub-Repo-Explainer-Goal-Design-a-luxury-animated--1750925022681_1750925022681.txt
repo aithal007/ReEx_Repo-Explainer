@@ -1,0 +1,103 @@
+📌 Product Name: ReEx – The AI-Powered GitHub Repo Explainer
+
+🎯 Goal:
+Design a luxury, animated, AI-style landing page + app interface for ReEx. This product uses an LLM (like Gemini) to explain GitHub repositories in natural language, and allows the user to interact with a chatbot to dive deeper into the repo’s logic.
+
+---
+
+🔷 PAGE 1: LANDING PAGE (Dark Mode, Dash AI Style)
+
+✴️ Hero Section:
+- Black background with soft neon edge gradients (purple/blue/green)
+- Product Name: “ReEx” in gradient text (like Dash AI)
+- Bold tagline: “The Last Repo Explainer You’ll Need”
+- Subtext: “Because ReEx doesn’t just summarize code. It explains it like a developer.”
+- CTA Button: “Start Now →” (white, pill-shaped, hover animated)
+- Secondary CTA: “Book a Demo” (outlined button)
+- Optional: “Backed by LLMs” tag styled like YCombinator badge
+- Smooth fade-in animations on scroll
+
+✴️ Navigation Bar:
+- Logo: ReEx (simple AI-like icon)
+- Nav Items: About | Features | Demo | Start Now
+- Sticky + responsive with scroll blur
+- Dark background with soft glow shadow
+
+---
+
+🔷 PAGE 2: USAGE CARDS (Appears when scrolling down)
+
+✴️ Auto-Sliding Card Section:
+- Cards glide left to right automatically every few seconds
+- Each card represents a ReEx use case:
+  - “Get a TL;DR of any repo”
+  - “Understand folder structure & files”
+  - “Ask questions like: What does this file do?”
+  - “Use it as a code interview assistant”
+- Each card has:
+  - A dark-glass background with rounded corners
+  - Lottie animation icon or glowing emoji
+  - Title + 3 bullets
+  - Hover pop or glow effect
+- Background: subtle gradient or dark blur
+
+🌀 Auto-carousel behavior (or user swipe) for smooth experience
+
+---
+
+🔷 PAGE 3: CHATBOT INTERFACE PAGE (New page after clicking “Start Now”)
+
+✴️ Layout:
+- Full-page interface styled like ChatGPT
+- Chat history on the left
+- Main chat window on right
+
+✴️ First Message:
+- Input box: “Paste your GitHub repo link”
+- Button: “Explain Repo”
+- Loader animation (typing dots or glowing bar)
+
+✴️ After Explanation:
+- Output appears like an AI message
+- Follow-up questions allowed:
+  “What does the utils folder do?”
+  “Explain main.py in simple terms”
+
+✴️ UI Design:
+- Rounded input box with mic + upload buttons
+- Dark, blurred input field with soft white glow
+- Messages animate in from bottom (chat bubbles)
+- Typing effect on AI messages (optional)
+- Profile bubble on top-right
+- Floating action button: “New Repo” (like ChatGPT’s new chat)
+
+---
+
+🛠 ANIMATION & STYLE INSTRUCTIONS:
+
+- Smooth page scroll transitions (fade-in, slide-up)
+- Sticky nav with scroll opacity
+- Lottie animations or animated SVGs
+- Gradient glow borders on cards/buttons
+- Use modern fonts like Inter or Satoshi
+- Mobile responsive, swipe-friendly on touch screens
+- Use neumorphism or glassmorphism in cards
+
+---
+
+📦 INTEGRATION REQUESTS:
+
+- If possible, connect backend input to `/explain` API (placeholder)
+- Use real-time typing animation or message stream placeholder
+- Use collapsible sidebar/chat history like ChatGPT
+- Let users clear history or ask follow-up questions
+
+---
+
+✅ WHAT TO GENERATE:
+
+- A full site with 3 pages: Landing, Sliding Use Case Section, Chatbot Page
+- Animate all key elements (hero text, CTA, cards, chat)
+- Create a clean, dark-themed, luxury AI SaaS feel
+
+🎨 Use a visual style similar to: Dash AI, Vercel, or OpenAI Chat
