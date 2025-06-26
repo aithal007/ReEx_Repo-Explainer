@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { explainRepoSchema, chatMessageSchema, insertConversationSchema, insertMessageSchema } from "@shared/schema";
 import { explainRepository, chatWithContext } from "./services/gemini";
-import { parseGitHubUrl, fetchReadme, validateRepository } from "./services/github";
+import { parseGitHubUrl, fetchReadme, validateRepository, fetchRepositoryStructure, fetchKeyFiles } from "./services/github";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Explain repository endpoint
@@ -23,8 +23,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch README
       const readmeContent = await fetchReadme(owner, repo);
       
-      // Generate explanation using Gemini
-      const explanation = await explainRepository(readmeContent, url);
+      // Fetch repository structure and key files
+      const repoStructure = await fetchRepositoryStructure(owner, repo);
+      const keyFiles = await fetchKeyFiles(owner, repo);
+      
+      // Generate explanation using Gemini with comprehensive data
+      const explanation = await explainRepository(readmeContent, url, repoStructure, keyFiles);
       
       // Create or get conversation
       let conversation;
@@ -35,7 +39,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         const repoName = `${owner}/${repo}`;
-        conversation = await storage.createConversation({ title: repoName });
+        conversation = await storage.createConversation({ 
+          title: repoName,
+          repoUrl: url,
+          repoStructure,
+          keyFiles: JSON.stringify(keyFiles)
+        });
       }
       
       // Save user message
@@ -83,8 +92,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isUser: true,
       });
       
-      // Generate AI response
-      const response = await chatWithContext(message, repoContext);
+      // Get repository data from conversation
+      const repoStructure = conversation.repoStructure || '';
+      const keyFiles = conversation.keyFiles ? JSON.parse(conversation.keyFiles) : {};
+      
+      // Generate AI response with full context
+      const response = await chatWithContext(message, repoContext, repoStructure, keyFiles);
       
       // Save AI response
       await storage.createMessage({

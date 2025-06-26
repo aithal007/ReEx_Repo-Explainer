@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Bot, User, Send, Plus, Paperclip } from "lucide-react";
+import { Bot, User, Send, Plus, Paperclip, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { validateGitHubUrl, extractRepoName } from "@/lib/utils";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import type { Message } from "@shared/schema";
 
 interface ChatInterfaceProps {
@@ -23,6 +26,90 @@ interface ExplainResponse {
 interface ChatResponse {
   response: string;
 }
+
+const MarkdownMessage = ({ content }: { content: string }) => {
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  return (
+    <div className="markdown-content prose prose-invert max-w-none">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-2xl font-bold mb-4 text-white border-b border-gray-600 pb-2">{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-xl font-semibold mb-3 text-white mt-6">{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-lg font-medium mb-2 text-gray-200 mt-4">{children}</h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-3 leading-relaxed text-gray-100">{children}</p>
+          ),
+          ul: ({ children }) => (
+            <ul className="mb-4 space-y-1 text-gray-100">{children}</ul>
+          ),
+          li: ({ children }) => (
+            <li className="flex items-start">
+              <span className="text-blue-400 mr-2 mt-1.5">•</span>
+              <span className="flex-1">{children}</span>
+            </li>
+          ),
+          code: ({ children, className }) => {
+            const isInline = !className?.includes('language-');
+            const text = String(children);
+            
+            if (isInline) {
+              return (
+                <code className="bg-gray-700 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono">
+                  {children}
+                </code>
+              );
+            }
+            
+            return (
+              <div className="relative group">
+                <Button
+                  onClick={() => copyToClipboard(text)}
+                  className="absolute top-2 right-2 p-1 bg-gray-600 hover:bg-gray-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  size="sm"
+                >
+                  {copiedText === text ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                </Button>
+                <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm border border-gray-600">
+                  <code>{children}</code>
+                </pre>
+              </div>
+            );
+          },
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-blue-400 bg-gray-800/50 p-4 my-4 italic text-gray-200">
+              {children}
+            </blockquote>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-white">{children}</strong>
+          ),
+          a: ({ children, href }) => (
+            <a href={href} className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 export default function ChatInterface({ conversationId, onNewConversation }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
@@ -124,7 +211,7 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col" style={{ height: "80vh" }}>
-      {!conversationId && !(messages as Message[]).length && (
+      {!conversationId && !messages.length && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -140,9 +227,9 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
       )}
       
       {/* Chat Messages */}
-      {(conversationId || (messages as Message[]).length > 0) && (
+      {(conversationId || messages.length > 0) && (
         <ScrollArea className="flex-1 p-6 space-y-6" style={{ height: "calc(80vh - 200px)" }}>
-          {!conversationId && (messages as Message[]).length === 0 && (
+          {!conversationId && messages.length === 0 && (
             <div className="flex items-start space-x-4 chat-message">
               <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                 <Bot className="text-white w-5 h-5" />
@@ -157,7 +244,7 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
             </div>
           )}
 
-          {(messages as Message[]).map((message: Message) => (
+          {messages.map((message: Message) => (
             <div key={message.id} className={`flex items-start space-x-4 chat-message ${message.isUser ? 'justify-end' : ''}`}>
               {message.isUser ? (
                 <>
@@ -173,8 +260,8 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
                   <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                     <Bot className="text-white w-5 h-5" />
                   </div>
-                  <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-2xl">
-                    <div className="text-gray-100 whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                  <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-4xl">
+                    <MarkdownMessage content={message.content} />
                   </div>
                 </>
               )}
@@ -237,7 +324,7 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
           </form>
 
           {/* Sample URLs for demo */}
-          {isInitialExplanation && !conversationId && !(messages as Message[]).length && (
+          {isInitialExplanation && !conversationId && !messages.length && (
             <div className="mt-6 text-center">
               <p className="text-gray-400 mb-4 text-sm">+ Add repository</p>
               <div className="flex flex-wrap gap-3 justify-center">

@@ -52,6 +52,9 @@ export class MemStorage implements IStorage {
     const conversation: Conversation = {
       ...insertConversation,
       id,
+      repoUrl: insertConversation.repoUrl || null,
+      repoStructure: insertConversation.repoStructure || null,
+      keyFiles: insertConversation.keyFiles || null,
       createdAt: new Date(),
     };
     this.conversations.set(id, conversation);

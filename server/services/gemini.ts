@@ -4,29 +4,61 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "" 
 });
 
-export async function explainRepository(readmeContent: string, repoUrl: string): Promise<string> {
-  const prompt = `You are an expert software engineer and technical writer.
+export async function explainRepository(
+  readmeContent: string, 
+  repoUrl: string, 
+  repoStructure: string, 
+  keyFiles: { [key: string]: string }
+): Promise<string> {
+  
+  const keyFilesInfo = Object.entries(keyFiles)
+    .map(([filename, content]) => `### ${filename}\n\`\`\`\n${content.slice(0, 2000)}\`\`\``)
+    .join('\n\n');
 
-Please analyze the following GitHub repository and its README file, then provide a comprehensive explanation in a conversational, easy-to-understand format.
+  const prompt = `You are an expert software engineer and technical writer with deep knowledge of modern development practices.
 
-Repository URL: ${repoUrl}
+Analyze this GitHub repository comprehensively using all available information:
 
-README Content:
+**Repository URL:** ${repoUrl}
+
+**README Content:**
 ${readmeContent}
 
-Please explain the following in a friendly, developer-to-developer tone:
+**Repository Structure:**
+${repoStructure}
 
-🎯 **What is this project?** (TL;DR in 2-3 sentences)
+**Key Configuration & Project Files:**
+${keyFilesInfo}
 
-📚 **What does it do and how does it work?** (Main functionality and approach)
+Provide a detailed, professional analysis in this format:
 
-🗂️ **Key components and files** (Important directories, files, or modules)
+## 🎯 Project Overview
+Provide a clear, concise summary of what this project does and its main purpose.
 
-🚀 **Getting started** (How someone would use or contribute to this project)
+## 🏗️ Architecture & Technology Stack
+Based on the files and structure, identify:
+- Programming languages used
+- Frameworks and libraries
+- Build tools and configuration
+- Database or storage solutions
+- Deployment and infrastructure setup
 
-💡 **Notable features or technologies** (What makes this project interesting or unique)
+## 📁 Project Structure
+Explain the key directories and their purposes based on the file structure.
 
-Format your response with clear sections using markdown formatting, emojis for visual appeal, and bullet points where appropriate. Keep it engaging and informative, as if you're explaining it to a fellow developer who wants to quickly understand the project.`;
+## 🔧 Key Dependencies & Tools
+List and explain important dependencies from package.json, requirements.txt, or similar files.
+
+## 🚀 Getting Started
+Explain how to set up and run this project locally.
+
+## 💡 Notable Features & Implementation Details
+Highlight interesting technical decisions, patterns, or unique aspects of the codebase.
+
+## 🎨 Development Workflow
+Based on configuration files, explain the development, testing, and deployment process.
+
+Write in a professional, informative tone that would be valuable for developers wanting to understand or contribute to this project. Focus on technical accuracy and practical insights.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -41,13 +73,33 @@ Format your response with clear sections using markdown formatting, emojis for v
   }
 }
 
-export async function chatWithContext(message: string, repoContext?: string): Promise<string> {
-  const systemPrompt = repoContext 
-    ? `You are ReEx, an AI assistant specialized in explaining code repositories. You have context about a GitHub repository. Here's what you know about the current repository:
+export async function chatWithContext(
+  message: string, 
+  repoContext?: string, 
+  repoStructure?: string, 
+  keyFiles?: { [key: string]: string }
+): Promise<string> {
+  
+  let contextInfo = '';
+  if (repoContext) {
+    contextInfo += `**Repository README:**\n${repoContext}\n\n`;
+  }
+  if (repoStructure) {
+    contextInfo += `**Repository Structure:**\n${repoStructure}\n\n`;
+  }
+  if (keyFiles && Object.keys(keyFiles).length > 0) {
+    const keyFilesInfo = Object.entries(keyFiles)
+      .map(([filename, content]) => `### ${filename}\n\`\`\`\n${content.slice(0, 1000)}\`\`\``)
+      .join('\n\n');
+    contextInfo += `**Key Files:**\n${keyFilesInfo}\n\n`;
+  }
 
-${repoContext}
+  const systemPrompt = contextInfo 
+    ? `You are ReEx, an AI assistant specialized in explaining code repositories. You have comprehensive context about a GitHub repository:
 
-Now answer the user's question about this repository in a helpful, conversational tone.`
+${contextInfo}
+
+Answer the user's question about this repository with detailed, technical insights. Use the file contents and structure to provide specific, accurate information.`
     : `You are ReEx, an AI assistant specialized in explaining code repositories. Answer the user's question about software development, GitHub repositories, or coding in general.`;
 
   try {
