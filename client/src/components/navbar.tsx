@@ -30,12 +30,6 @@ export default function Navbar() {
           
           <div className="hidden md:flex items-center space-x-8">
             <button 
-              onClick={() => scrollToSection("hero")}
-              className="text-gray-300 hover:text-white transition-colors"
-            >
-              About
-            </button>
-            <button 
               onClick={() => scrollToSection("features")}
               className="text-gray-300 hover:text-white transition-colors"
             >

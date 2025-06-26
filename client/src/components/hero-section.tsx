@@ -31,7 +31,7 @@ export default function HeroSection() {
             Because ReEx doesn't just summarize code. It explains it like a developer.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex justify-center">
             <Link href="/chat">
               <Button 
                 size="lg"
@@ -43,17 +43,6 @@ export default function HeroSection() {
                 </span>
               </Button>
             </Link>
-            
-            <div className="gradient-border">
-              <Button 
-                variant="ghost"
-                size="lg"
-                className="gradient-border-inner px-8 py-4 text-white hover:bg-white/5 transition-all"
-                onClick={scrollToDemo}
-              >
-                Book a Demo
-              </Button>
-            </div>
           </div>
           
           <div className="mt-8">
