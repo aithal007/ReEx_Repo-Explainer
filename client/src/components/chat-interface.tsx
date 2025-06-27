@@ -11,10 +11,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import type { Message } from "@shared/schema";
+import { useLocation } from "wouter";
 
 interface ChatInterfaceProps {
   conversationId?: number;
   onNewConversation: (id: number) => void;
+  fixedInput?: boolean;
 }
 
 interface ExplainResponse {
@@ -111,12 +113,15 @@ const MarkdownMessage = ({ content }: { content: string }) => {
   );
 };
 
-export default function ChatInterface({ conversationId, onNewConversation }: ChatInterfaceProps) {
+export default function ChatInterface({ conversationId, onNewConversation, fixedInput }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [repoContext, setRepoContext] = useState("");
   const [isInitialExplanation, setIsInitialExplanation] = useState(!conversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const chatAreaRef = useRef<HTMLDivElement>(null);
 
   // Fetch messages for current conversation
   const { data: messages = [], refetch: refetchMessages } = useQuery<Message[]>({
@@ -137,6 +142,7 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
       setIsInitialExplanation(false);
       if (!conversationId) {
         onNewConversation(data.conversationId);
+        navigate(`/chat/${data.conversationId}`);
       }
       refetchMessages();
     },
@@ -207,10 +213,44 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Track scroll position to show/hide arrow
+  useEffect(() => {
+    if (!fixedInput) return;
+    const handleScroll = () => {
+      const el = chatAreaRef.current;
+      if (!el) return;
+      const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+      console.log('Scroll debug:', {scrollHeight: el.scrollHeight, scrollTop: el.scrollTop, clientHeight: el.clientHeight, diff});
+      // Show arrow if not at the bottom (within 1px)
+      setShowScrollDown(diff > 1);
+    };
+    const el = chatAreaRef.current;
+    if (el) {
+      el.addEventListener('scroll', handleScroll);
+      // Initial check
+      const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+      console.log('Initial scroll debug:', {scrollHeight: el.scrollHeight, scrollTop: el.scrollTop, clientHeight: el.clientHeight, diff});
+      setShowScrollDown(el.scrollHeight > el.clientHeight && diff > 1);
+    }
+    return () => {
+      if (el) el.removeEventListener('scroll', handleScroll);
+    };
+  }, [fixedInput, messages]);
+
+  // Also check after new messages render
+  useEffect(() => {
+    if (!fixedInput) return;
+    const el = chatAreaRef.current;
+    if (!el) return;
+    const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+    console.log('After message scroll debug:', {scrollHeight: el.scrollHeight, scrollTop: el.scrollTop, clientHeight: el.clientHeight, diff});
+    setShowScrollDown(diff > 1);
+  }, [messages, fixedInput]);
+
   const isLoading = explainMutation.isPending || chatMutation.isPending;
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col" style={{ height: "80vh" }}>
+    <div className={`w-full max-w-4xl mx-auto flex flex-col flex-1 min-h-0 ${fixedInput ? 'relative h-full' : ''}`} style={fixedInput ? {height: '100%'} : {}}>
       {!conversationId && !messages.length && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-2xl">
@@ -227,70 +267,85 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
       )}
       
       {/* Chat Messages */}
-      {(conversationId || messages.length > 0) && (
-        <ScrollArea className="flex-1 p-6 space-y-6" style={{ height: "calc(80vh - 200px)" }}>
-          {!conversationId && messages.length === 0 && (
-            <div className="flex items-start space-x-4 chat-message">
-              <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot className="text-white w-5 h-5" />
-              </div>
-              <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-2xl">
-                <p className="text-gray-200 leading-relaxed">
-                  Hi! I'm ReEx, your AI-powered repository explainer.
-                  <br /><br />
-                  Paste a GitHub repository URL below and I'll provide a comprehensive explanation of what the project does, its structure, and key components.
-                </p>
-              </div>
+      <div className={fixedInput ? 'flex-1 min-h-0 overflow-y-auto pb-20' : ''} ref={fixedInput ? chatAreaRef : undefined}>
+        {!conversationId && messages.length === 0 && (
+          <div className="flex items-start space-x-4 chat-message">
+            <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+              <Bot className="text-white w-5 h-5" />
             </div>
-          )}
-
-          {messages.map((message: Message) => (
-            <div key={message.id} className={`flex items-start space-x-4 chat-message ${message.isUser ? 'justify-end' : ''}`}>
-              {message.isUser ? (
-                <>
-                  <div className="bg-gradient-to-r from-neon-purple to-neon-blue rounded-3xl px-6 py-4 max-w-2xl">
-                    <p className="text-white leading-relaxed">{message.content}</p>
-                  </div>
-                  <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="text-white w-5 h-5" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="text-white w-5 h-5" />
-                  </div>
-                  <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-4xl">
-                    <MarkdownMessage content={message.content} />
-                  </div>
-                </>
-              )}
+            <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-2xl">
+              <p className="text-gray-200 leading-relaxed">
+                Hi! I'm ReEx, your AI-powered repository explainer.
+                <br /><br />
+                Paste a GitHub repository URL below and I'll provide a comprehensive explanation of what the project does, its structure, and key components.
+              </p>
             </div>
-          ))}
+          </div>
+        )}
 
-          {isLoading && (
-            <div className="flex items-start space-x-4 chat-message">
-              <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot className="text-white w-5 h-5" />
-              </div>
-              <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-md">
-                <p className="text-gray-200 typing-indicator leading-relaxed">
-                  {isInitialExplanation ? "Analyzing repository..." : "Thinking..."}
-                </p>
-              </div>
+        {messages.map((message: Message) => (
+          <div key={message.id} className={`flex items-start space-x-4 chat-message ${message.isUser ? 'justify-end' : ''}`}>
+            {message.isUser ? (
+              <>
+                <div className="bg-gradient-to-r from-neon-purple to-neon-blue rounded-3xl px-6 py-4 max-w-2xl">
+                  <p className="text-white leading-relaxed">{message.content}</p>
+                </div>
+                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <User className="text-white w-5 h-5" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="text-white w-5 h-5" />
+                </div>
+                <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-4xl">
+                  <MarkdownMessage content={message.content} />
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="flex items-start space-x-4 chat-message">
+            <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+              <Bot className="text-white w-5 h-5" />
             </div>
-          )}
+            <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-md">
+              <p className="text-gray-200 typing-indicator leading-relaxed">
+                {isInitialExplanation ? "Analyzing repository..." : "Thinking..."}
+              </p>
+            </div>
+          </div>
+        )}
 
-          <div ref={messagesEndRef} />
-        </ScrollArea>
-      )}
+        <div ref={messagesEndRef} />
+      </div>
       
       {/* Chat Input */}
-      <div className="p-6">
-        <div className="max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="relative">
-            <div className="flex items-end space-x-4 bg-dark-secondary rounded-3xl border border-white/10 p-4">
-              <div className="flex-1">
+      {fixedInput ? (
+        <div className="fixed bottom-0 left-0 w-full flex justify-center z-30 bg-transparent mb-8">
+          <div className="w-full max-w-3xl">
+            {/* Up arrow button above input, only if there are messages and not at bottom */}
+            {(conversationId || messages.length > 0) && showScrollDown && (
+              <div className="flex justify-center mb-2">
+                <button
+                  type="button"
+                  className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
+                  onClick={() => {
+                    if (messagesEndRef.current) {
+                      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  aria-label="Scroll to latest message"
+                >
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-chevron-down text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="relative">
+              <div className="flex items-center h-14 rounded-full shadow-2xl px-6 gap-2 bg-black/70">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -299,64 +354,85 @@ export default function ChatInterface({ conversationId, onNewConversation }: Cha
                       ? "Ask anything..." 
                       : "Message ReEx..."
                   }
-                  className="w-full bg-transparent border-0 text-white placeholder-gray-400 focus:outline-none focus:ring-0 text-lg resize-none"
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-base h-full px-3 focus:ring-0 focus:outline-none"
                   disabled={isLoading}
+                  style={{ minHeight: '40px' }}
                 />
-              </div>
-              <div className="flex items-center space-x-2">
                 <Button
                   type="button"
                   variant="ghost" 
-                  size="sm"
-                  className="p-2 hover:bg-white/10 rounded-full"
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0"
                 >
-                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <Paperclip className="w-5 h-5 text-gray-400" />
                 </Button>
                 <Button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5 text-gray-200" />
                 </Button>
               </div>
-            </div>
-          </form>
-
-          {/* Sample URLs for demo */}
-          {isInitialExplanation && !conversationId && !messages.length && (
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 mb-4 text-sm">+ Add repository</p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button
-                  onClick={() => demoRepo('https://github.com/facebook/react')}
-                  variant="ghost"
-                  size="sm"
-                  className="bg-dark-secondary hover:bg-white/10 text-sm px-4 py-2 rounded-full border border-white/10"
-                >
-                  facebook/react
-                </Button>
-                <Button
-                  onClick={() => demoRepo('https://github.com/vercel/next.js')}
-                  variant="ghost"
-                  size="sm"
-                  className="bg-dark-secondary hover:bg-white/10 text-sm px-4 py-2 rounded-full border border-white/10"
-                >
-                  vercel/next.js
-                </Button>
-                <Button
-                  onClick={() => demoRepo('https://github.com/microsoft/vscode')}
-                  variant="ghost"
-                  size="sm"
-                  className="bg-dark-secondary hover:bg-white/10 text-sm px-4 py-2 rounded-full border border-white/10"
-                >
-                  microsoft/vscode
-                </Button>
-              </div>
-            </div>
-          )}
+            </form>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative pb-2 pt-2">
+          <div className="max-w-2xl mx-auto">
+            {/* Up arrow button above input, only if there are messages and not at bottom */}
+            {(conversationId || messages.length > 0) && showScrollDown && (
+              <div className="flex justify-center mb-1">
+                <button
+                  type="button"
+                  className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
+                  onClick={() => {
+                    if (messagesEndRef.current) {
+                      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  aria-label="Scroll to latest message"
+                >
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-chevron-down text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="relative">
+              <div className="flex items-center h-14 rounded-full shadow-2xl px-6 gap-2 bg-black/70">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={
+                    isInitialExplanation 
+                      ? "Ask anything..." 
+                      : "Message ReEx..."
+                  }
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-base h-full px-3 focus:ring-0 focus:outline-none"
+                  disabled={isLoading}
+                  style={{ minHeight: '40px' }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost" 
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 p-2 transition-all flex items-center justify-center"
+                >
+                  <Paperclip className="w-5 h-5 text-gray-400" />
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 transition-all flex items-center justify-center p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-5 h-5 text-gray-200" />
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

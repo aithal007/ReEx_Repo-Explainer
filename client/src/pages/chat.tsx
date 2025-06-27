@@ -24,15 +24,14 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-dark-primary text-white flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between px-4 h-14 border-b border-white/10 bg-dark-primary sticky top-0 z-20">
         <Link href="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-neon-purple to-neon-blue rounded-lg flex items-center justify-center">
             <Code className="text-white w-4 h-4" />
           </div>
           <span className="text-xl font-bold gradient-text">ReEx</span>
         </Link>
-        
         <Button 
           onClick={() => handleNewConversation(0)}
           className="bg-gradient-to-r from-neon-purple to-neon-blue hover:scale-105 transition-all px-4 py-2"
@@ -41,12 +40,12 @@ export default function Chat() {
           New Chat
         </Button>
       </div>
-
-      {/* Full Screen Chat Interface */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      {/* Chat Area fills space between header and input */}
+      <div className="flex-1 min-h-0 flex flex-col">
         <ChatInterface 
           conversationId={conversationId}
           onNewConversation={handleNewConversation}
+          fixedInput
         />
       </div>
     </div>

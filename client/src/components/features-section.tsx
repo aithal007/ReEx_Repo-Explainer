@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Check, Rocket, FolderOpen, MessageCircle, Target } from "lucide-react";
 
 const features = [
@@ -7,7 +6,7 @@ const features = [
     title: "Get TL;DR of Any Repo",
     items: [
       "Instant repository summaries",
-      "Key features identification", 
+      "Key features identification",
       "Technology stack analysis"
     ],
     color: "text-neon-green"
@@ -24,7 +23,7 @@ const features = [
   },
   {
     icon: <MessageCircle className="w-12 h-12" />,
-    title: "Ask Interactive Questions", 
+    title: "Ask Interactive Questions",
     items: [
       "Natural language queries",
       "Deep dive explanations",
@@ -37,29 +36,17 @@ const features = [
     title: "Code Interview Assistant",
     items: [
       "Technical interview prep",
-      "Code review assistance", 
+      "Code review assistance",
       "Learning path guidance"
     ],
     color: "text-neon-green"
   }
 ];
 
+// Duplicate the features for seamless looping
+const loopedFeatures = [...features, ...features];
+
 export default function FeaturesSection() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = features.length;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [totalSlides]);
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-  };
-
   return (
     <section id="features" className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -69,16 +56,16 @@ export default function FeaturesSection() {
             Transform any GitHub repository into clear, understandable explanations
           </p>
         </div>
-        
-        {/* Auto-sliding cards container */}
-        <div className="relative overflow-hidden">
-          <div 
-            className="flex transition-transform duration-500 ease-in-out"
+        {/* Smoothly auto-sliding cards container */}
+        <div className="relative overflow-hidden py-8 md:py-12" style={{ minHeight: '370px' }}>
+          <div
+            className="flex w-max animate-features-carousel"
             style={{
-              transform: `translateX(-${currentSlide * (window.innerWidth < 768 ? 100 : 25)}%)`
+              // The width is set by the number of cards and their min-width
+              // The animation is handled by Tailwind's arbitrary keyframes below
             }}
           >
-            {features.map((feature, index) => (
+            {loopedFeatures.map((feature, index) => (
               <div
                 key={index}
                 className="min-w-full md:min-w-80 glassmorphism rounded-2xl p-8 mx-4 hover:scale-105 transition-all duration-300 neon-glow"
@@ -99,20 +86,22 @@ export default function FeaturesSection() {
             ))}
           </div>
         </div>
-        
-        {/* Card navigation dots */}
-        <div className="flex justify-center mt-8 space-x-2">
-          {Array.from({ length: totalSlides }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all ${
-                index === currentSlide ? 'bg-white' : 'bg-white/30'
-              }`}
-            />
-          ))}
-        </div>
       </div>
+      {/* Tailwind custom keyframes for infinite scroll */}
+      <style>{`
+        @keyframes features-carousel {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-features-carousel {
+          animation: features-carousel 24s linear infinite;
+        }
+        @media (max-width: 767px) {
+          .animate-features-carousel {
+            animation: features-carousel 16s linear infinite;
+          }
+        }
+      `}</style>
     </section>
   );
 }

@@ -18,7 +18,8 @@ export default function HeroSection() {
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-neon-blue rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-neon-green rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}}></div>
       </div>
-      
+      {/* Gradient fade at bottom for smooth transition */}
+      <div className="pointer-events-none absolute bottom-0 left-0 w-full h-32 md:h-48" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, #09090b 100%)'}} />
       <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
         <div className="animate-fade-in">
           <h1 className="text-6xl md:text-8xl font-bold mb-6">
