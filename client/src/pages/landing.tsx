@@ -46,30 +46,30 @@ export default function Landing() {
       <HeroSection />
       <FeaturesSection />
       {/* ChatBot Interface Section replaced with repo input */}
-      <section id="chatbot" className="min-h-screen py-20 px-4">
+      <section id="chatbot" className="min-h-[60vh] pt-8 pb-10 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 gradient-text">Try ReEx Now</h2>
-            <p className="text-xl text-gray-400">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3 gradient-text">Try ReEx Now</h2>
+            <p className="text-base md:text-lg text-gray-400">
               Paste any GitHub repository URL and get an instant explanation
             </p>
           </div>
-          <form onSubmit={handleSubmit} className="max-w-xl mx-auto flex flex-col items-center gap-4">
+          <form onSubmit={handleSubmit} className="max-w-xl mx-auto flex flex-col items-center gap-2">
             <Input
               value={repoUrl}
               onChange={e => setRepoUrl(e.target.value)}
               placeholder="Enter GitHub repository URL..."
-              className="w-full bg-dark-secondary border border-white/10 rounded-full px-6 py-3 text-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neon-blue"
+              className="w-full bg-dark-secondary border border-white/10 rounded-full px-5 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neon-blue shadow-md"
               disabled={explainMutation.isPending}
             />
             <Button
               type="submit"
-              className="bg-gradient-to-r from-neon-purple to-neon-blue px-8 py-3 rounded-full text-lg font-semibold"
+              className="bg-gradient-to-r from-neon-purple to-neon-blue px-6 py-2 rounded-full text-sm font-semibold shadow-lg"
               disabled={explainMutation.isPending}
             >
               {explainMutation.isPending ? "Analyzing..." : "Explain Repository"}
             </Button>
-            {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
           </form>
         </div>
       </section>

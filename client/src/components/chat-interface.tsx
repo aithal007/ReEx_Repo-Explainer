@@ -122,6 +122,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
   const [, navigate] = useLocation();
   const [showScrollDown, setShowScrollDown] = useState(false);
   const chatAreaRef = useRef<HTMLDivElement>(null);
+  const [readmeError, setReadmeError] = useState("");
 
   // Fetch messages for current conversation
   const { data: messages = [], refetch: refetchMessages } = useQuery<Message[]>({
@@ -140,18 +141,24 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
     onSuccess: (data) => {
       setRepoContext(data.repoContext);
       setIsInitialExplanation(false);
+      setReadmeError("");
       if (!conversationId) {
         onNewConversation(data.conversationId);
         navigate(`/chat/${data.conversationId}`);
       }
       refetchMessages();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to explain repository",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      let msg = error instanceof Error ? error.message : (error?.message || "Failed to explain repository");
+      if (msg.includes("README.md not found")) {
+        setReadmeError("Sorry, this repository does not have a README.md file. Please provide a repository with a README for analysis.");
+      } else {
+        toast({
+          title: "Error",
+          description: msg,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -267,7 +274,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
       )}
       
       {/* Chat Messages */}
-      <div className={fixedInput ? 'flex-1 min-h-0 overflow-y-auto pb-20' : ''} ref={fixedInput ? chatAreaRef : undefined}>
+      <div className={fixedInput ? 'flex-1 min-h-0 overflow-y-auto pb-32' : ''} ref={fixedInput ? chatAreaRef : undefined}>
         {!conversationId && messages.length === 0 && (
           <div className="flex items-start space-x-4 chat-message">
             <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -283,27 +290,41 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
           </div>
         )}
 
+        {readmeError && (
+          <div className="flex items-start space-x-4 chat-message mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-800 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ring-2 ring-red-400/60">
+              <Bot className="text-white w-5 h-5" />
+            </div>
+            <div className="bg-gradient-to-br from-red-700/90 to-red-900/80 border border-red-400/60 rounded-3xl px-8 py-5 max-w-2xl shadow-2xl backdrop-blur-md">
+              <p className="text-red-100 leading-relaxed font-semibold text-lg">
+                {readmeError}
+              </p>
+            </div>
+          </div>
+        )}
+
         {messages.map((message: Message) => (
-          <div key={message.id} className={`flex items-start space-x-4 chat-message ${message.isUser ? 'justify-end' : ''}`}>
-            {message.isUser ? (
-              <>
-                <div className="bg-gradient-to-r from-neon-purple to-neon-blue rounded-3xl px-6 py-4 max-w-2xl">
-                  <p className="text-white leading-relaxed">{message.content}</p>
-                </div>
-                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="text-white w-5 h-5" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="text-white w-5 h-5" />
-                </div>
-                <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-4xl">
-                  <MarkdownMessage content={message.content} />
-                </div>
-              </>
-            )}
+          <div
+            key={message.id}
+            className={`flex items-start space-x-4 chat-message mb-6 ${message.isUser ? 'justify-end flex-row-reverse' : ''}`}
+          >
+            <div className={`w-10 h-10 ${message.isUser ? 'bg-gradient-to-r from-white/30 to-neon-blue' : 'bg-gradient-to-r from-neon-purple to-neon-blue'} rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${message.isUser ? 'ring-2 ring-white/40' : 'ring-2 ring-neon-blue/40'}`}>
+              {message.isUser ? <User className="text-white w-5 h-5" /> : <Bot className="text-white w-5 h-5" />}
+            </div>
+            <div
+              className={
+                message.isUser
+                  ? 'bg-gradient-to-br from-white/10 to-neon-blue/20 rounded-3xl px-8 py-5 max-w-2xl shadow-xl backdrop-blur-md border border-white/10 text-white text-lg'
+                  : 'bg-gradient-to-br from-dark-secondary/80 to-neon-purple/20 rounded-3xl px-8 py-5 max-w-2xl shadow-xl backdrop-blur-md border border-white/10 text-gray-100 text-lg'
+              }
+              style={{ wordBreak: 'break-word' }}
+            >
+              {message.isUser ? (
+                <span>{message.content}</span>
+              ) : (
+                <MarkdownMessage content={message.content} />
+              )}
+            </div>
           </div>
         ))}
 
@@ -325,11 +346,11 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
       
       {/* Chat Input */}
       {fixedInput ? (
-        <div className="fixed bottom-0 left-0 w-full flex justify-center z-30 bg-transparent mb-8">
+        <div className="fixed bottom-0 left-0 w-full flex justify-center z-30 bg-transparent mb-10">
           <div className="w-full max-w-3xl">
             {/* Up arrow button above input, only if there are messages and not at bottom */}
             {(conversationId || messages.length > 0) && showScrollDown && (
-              <div className="flex justify-center mb-2">
+              <div className="flex justify-center mb-3">
                 <button
                   type="button"
                   className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
@@ -345,7 +366,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
               </div>
             )}
             <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-center h-14 rounded-full shadow-2xl px-6 gap-2 bg-black/70">
+              <div className="flex items-center h-12 rounded-full shadow-2xl px-5 gap-2 bg-black/70">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -354,9 +375,9 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
                       ? "Ask anything..." 
                       : "Message ReEx..."
                   }
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-base h-full px-3 focus:ring-0 focus:outline-none"
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-xs h-full px-2 focus:ring-0 focus:outline-none text-right"
                   disabled={isLoading}
-                  style={{ minHeight: '40px' }}
+                  style={{ minHeight: '36px' }}
                 />
                 <Button
                   type="button"
@@ -399,7 +420,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
               </div>
             )}
             <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-center h-14 rounded-full shadow-2xl px-6 gap-2 bg-black/70">
+              <div className="flex items-center h-12 rounded-full shadow-2xl px-5 gap-2 bg-black/70">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -408,15 +429,15 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
                       ? "Ask anything..." 
                       : "Message ReEx..."
                   }
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-base h-full px-3 focus:ring-0 focus:outline-none"
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-xs h-full px-2 focus:ring-0 focus:outline-none text-right"
                   disabled={isLoading}
-                  style={{ minHeight: '40px' }}
+                  style={{ minHeight: '36px' }}
                 />
                 <Button
                   type="button"
                   variant="ghost" 
                   size="icon"
-                  className="rounded-full bg-white/10 hover:bg-white/20 p-2 transition-all flex items-center justify-center"
+                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0"
                 >
                   <Paperclip className="w-5 h-5 text-gray-400" />
                 </Button>
@@ -424,7 +445,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
                   type="submit"
                   disabled={!input.trim() || isLoading}
                   size="icon"
-                  className="rounded-full bg-white/10 hover:bg-white/20 transition-all flex items-center justify-center p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-5 h-5 text-gray-200" />
                 </Button>

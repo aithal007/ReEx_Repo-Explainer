@@ -21,7 +21,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch README
-      const readmeContent = await fetchReadme(owner, repo);
+      let readmeContent;
+      try {
+        readmeContent = await fetchReadme(owner, repo);
+      } catch (err) {
+        return res.status(404).json({ message: "README.md not found in this repository" });
+      }
       
       // Fetch repository structure and key files
       const repoStructure = await fetchRepositoryStructure(owner, repo);
