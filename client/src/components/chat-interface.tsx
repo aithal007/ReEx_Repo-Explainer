@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Bot, User, Send, Plus, Paperclip, Copy, Check } from "lucide-react";
+import { Bot, User, Send, Plus, Paperclip, Copy, Check, Settings, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,11 +45,29 @@ const MarkdownMessage = ({ content }: { content: string }) => {
         rehypePlugins={[rehypeHighlight]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-2xl font-bold mb-4 text-white border-b border-gray-600 pb-2">{children}</h1>
+            <h1 className="text-2xl font-bold mb-4 text-white border-b border-gray-600 pb-2 flex items-center gap-2">
+              <span>✨</span>{children}
+            </h1>
           ),
-          h2: ({ children }) => (
-            <h2 className="text-xl font-semibold mb-3 text-white mt-6">{children}</h2>
-          ),
+          h2: ({ children }) => {
+            // Add emojis for common section headings
+            let emoji = '';
+            const text = String(children).toLowerCase();
+            if (text.includes('overview')) emoji = '🎯';
+            else if (text.includes('architecture')) emoji = '🏗️';
+            else if (text.includes('structure')) emoji = '📁';
+            else if (text.includes('dependencies')) emoji = '📦';
+            else if (text.includes('features')) emoji = '💡';
+            else if (text.includes('workflow')) emoji = '🛠️';
+            else if (text.includes('testing')) emoji = '🧪';
+            else if (text.includes('deployment')) emoji = '🚀';
+            else if (text.includes('control')) emoji = '🔗';
+            return (
+              <h2 className="text-xl font-semibold mb-3 text-white mt-6 flex items-center gap-2">
+                {emoji && <span>{emoji}</span>}{children}
+              </h2>
+            );
+          },
           h3: ({ children }) => (
             <h3 className="text-lg font-medium mb-2 text-gray-200 mt-4">{children}</h3>
           ),
@@ -60,25 +78,23 @@ const MarkdownMessage = ({ content }: { content: string }) => {
             <ul className="mb-4 space-y-1 text-gray-100">{children}</ul>
           ),
           li: ({ children }) => (
-            <li className="flex items-start">
+            <li className="flex items-start luxury-list-item">
               <span className="text-blue-400 mr-2 mt-1.5">•</span>
-              <span className="flex-1">{children}</span>
+              <span className="flex-1 luxury-list-text">{children}</span>
             </li>
           ),
-          code: ({ children, className }) => {
+          code: ({ children, className, node, ...props }) => {
             const isInline = !className?.includes('language-');
             const text = String(children);
-            
+            // All inline code should be bold, luxury-styled text (no code font), blue color
             if (isInline) {
               return (
-                <code className="bg-gray-700 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono">
-                  {children}
-                </code>
+                <span className="font-bold text-blue-400 luxury-inline-code">{children}</span>
               );
             }
-            
+            // Only code blocks (multi-line) get the code style
             return (
-              <div className="relative group">
+              <div className="relative group luxury-block-code">
                 <Button
                   onClick={() => copyToClipboard(text)}
                   className="absolute top-2 right-2 p-1 bg-gray-600 hover:bg-gray-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -257,7 +273,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
   const isLoading = explainMutation.isPending || chatMutation.isPending;
 
   return (
-    <div className={`w-full max-w-4xl mx-auto flex flex-col flex-1 min-h-0 ${fixedInput ? 'relative h-full' : ''}`} style={fixedInput ? {height: '100%'} : {}}>
+    <div className={`w-full max-w-5xl mx-auto ml-16 flex flex-col flex-1 min-h-0 ${fixedInput ? 'relative h-full' : ''}`} style={fixedInput ? {height: '100%'} : {}}>
       {!conversationId && !messages.length && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-2xl">
@@ -266,8 +282,9 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
               <br />
               <span className="text-white">in seconds</span>
             </h1>
-            <p className="text-xl text-gray-400 mb-8">
-              ReEx is your AI agent for understanding GitHub repositories instantly
+            <p className="text-xl text-gray-400 mb-8 flex items-center justify-center gap-2">
+              <Bot className="inline-block w-7 h-7 text-neon-green mr-2" />
+              <span>👋 Hi, I'm <span className="font-semibold gradient-text">ReEx</span>! Paste a GitHub repo URL below to get instant, developer-style insights. <span className="ml-1">🚀</span></span>
             </p>
           </div>
         </div>
@@ -275,21 +292,6 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
       
       {/* Chat Messages */}
       <div className={fixedInput ? 'flex-1 min-h-0 overflow-y-auto pb-32' : ''} ref={fixedInput ? chatAreaRef : undefined}>
-        {!conversationId && messages.length === 0 && (
-          <div className="flex items-start space-x-4 chat-message">
-            <div className="w-10 h-10 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot className="text-white w-5 h-5" />
-            </div>
-            <div className="bg-dark-secondary rounded-3xl px-6 py-4 max-w-2xl">
-              <p className="text-gray-200 leading-relaxed">
-                Hi! I'm ReEx, your AI-powered repository explainer.
-                <br /><br />
-                Paste a GitHub repository URL below and I'll provide a comprehensive explanation of what the project does, its structure, and key components.
-              </p>
-            </div>
-          </div>
-        )}
-
         {readmeError && (
           <div className="flex items-start space-x-4 chat-message mb-6">
             <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-800 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ring-2 ring-red-400/60">
@@ -306,16 +308,16 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
         {messages.map((message: Message) => (
           <div
             key={message.id}
-            className={`flex items-start space-x-4 chat-message mb-6 ${message.isUser ? 'justify-end flex-row-reverse' : ''}`}
+            className={`flex items-start chat-message mb-6`}
           >
-            <div className={`w-10 h-10 ${message.isUser ? 'bg-gradient-to-r from-white/30 to-neon-blue' : 'bg-gradient-to-r from-neon-purple to-neon-blue'} rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${message.isUser ? 'ring-2 ring-white/40' : 'ring-2 ring-neon-blue/40'}`}>
+            <div className={`w-10 h-10 ml-2 ${message.isUser ? 'bg-gradient-to-r from-white/30 to-neon-blue' : 'bg-gradient-to-r from-neon-purple to-neon-blue'} rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${message.isUser ? 'ring-2 ring-white/40' : 'ring-2 ring-neon-blue/40'}`}>
               {message.isUser ? <User className="text-white w-5 h-5" /> : <Bot className="text-white w-5 h-5" />}
             </div>
             <div
               className={
-                message.isUser
-                  ? 'bg-gradient-to-br from-white/10 to-neon-blue/20 rounded-3xl px-8 py-5 max-w-2xl shadow-xl backdrop-blur-md border border-white/10 text-white text-lg'
-                  : 'bg-gradient-to-br from-dark-secondary/80 to-neon-purple/20 rounded-3xl px-8 py-5 max-w-2xl shadow-xl backdrop-blur-md border border-white/10 text-gray-100 text-lg'
+                (message.isUser
+                  ? 'bg-gradient-to-br from-white/10 to-neon-blue/20 rounded-3xl px-8 py-5 max-w-4xl shadow-xl backdrop-blur-md border border-white/10 text-white text-lg'
+                  : 'bg-gradient-to-br from-dark-secondary/80 to-neon-purple/20 rounded-3xl px-8 py-5 max-w-4xl shadow-xl backdrop-blur-md border border-white/10 text-gray-100 text-lg') + ' ml-4'
               }
               style={{ wordBreak: 'break-word' }}
             >
@@ -344,29 +346,31 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
         <div ref={messagesEndRef} />
       </div>
       
+      {/* Down Arrow Scroll Button (only when not at bottom) */}
+      {fixedInput && showScrollDown && (
+        <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: '80px', zIndex: 50 }}>
+          <button
+            type="button"
+            className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
+            onClick={() => {
+              if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            aria-label="Scroll to latest message"
+          >
+            <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-chevron-down text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        </div>
+      )}
+      
       {/* Chat Input */}
       {fixedInput ? (
         <div className="fixed bottom-0 left-0 w-full flex justify-center z-30 bg-transparent mb-10">
           <div className="w-full max-w-3xl">
-            {/* Up arrow button above input, only if there are messages and not at bottom */}
-            {(conversationId || messages.length > 0) && showScrollDown && (
-              <div className="flex justify-center mb-3">
-                <button
-                  type="button"
-                  className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
-                  onClick={() => {
-                    if (messagesEndRef.current) {
-                      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  aria-label="Scroll to latest message"
-                >
-                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-chevron-down text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-center h-12 rounded-full shadow-2xl px-5 gap-2 bg-black/70">
+              <div className="flex items-center h-16 rounded-full shadow-2xl px-6 gap-3 bg-[#232323] focus-within:shadow-3xl">
+                {/* Input */}
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -375,25 +379,17 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
                       ? "Ask anything..." 
                       : "Message ReEx..."
                   }
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-xs h-full px-2 focus:ring-0 focus:outline-none text-right"
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-base h-full px-3 focus:ring-0 focus:outline-none"
                   disabled={isLoading}
-                  style={{ minHeight: '36px' }}
+                  style={{ minHeight: '40px' }}
                 />
-                <Button
-                  type="button"
-                  variant="ghost" 
-                  size="icon"
-                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0"
-                >
-                  <Paperclip className="w-5 h-5 text-gray-400" />
-                </Button>
                 <Button
                   type="submit"
                   disabled={!input.trim() || isLoading}
                   size="icon"
-                  className="rounded-full bg-white/10 hover:bg-white/20 w-10 h-10 flex items-center justify-center p-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 w-12 h-12 flex items-center justify-center p-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
-                  <Send className="w-5 h-5 text-gray-200" />
+                  <Send className="w-6 h-6 text-white" />
                 </Button>
               </div>
             </form>
@@ -402,23 +398,6 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
       ) : (
         <div className="relative pb-2 pt-2">
           <div className="max-w-2xl mx-auto">
-            {/* Up arrow button above input, only if there are messages and not at bottom */}
-            {(conversationId || messages.length > 0) && showScrollDown && (
-              <div className="flex justify-center mb-1">
-                <button
-                  type="button"
-                  className="bg-dark-secondary rounded-full p-2 shadow-md border border-white/10 hover:bg-white/10 transition-all"
-                  onClick={() => {
-                    if (messagesEndRef.current) {
-                      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  aria-label="Scroll to latest message"
-                >
-                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-chevron-down text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="relative">
               <div className="flex items-center h-12 rounded-full shadow-2xl px-5 gap-2 bg-black/70">
                 <Input
@@ -429,7 +408,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
                       ? "Ask anything..." 
                       : "Message ReEx..."
                   }
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-xs h-full px-2 focus:ring-0 focus:outline-none text-right"
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400 text-xs h-full px-2 focus:ring-0 focus:outline-none"
                   disabled={isLoading}
                   style={{ minHeight: '36px' }}
                 />
