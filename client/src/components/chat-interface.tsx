@@ -273,7 +273,7 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
   const isLoading = explainMutation.isPending || chatMutation.isPending;
 
   return (
-    <div className={`w-full max-w-5xl mx-auto ml-16 flex flex-col flex-1 min-h-0 ${fixedInput ? 'relative h-full' : ''}`} style={fixedInput ? {height: '100%'} : {}}>
+    <div className={`w-full max-w-full mx-auto px-2 flex flex-col flex-1 min-h-0 ${fixedInput ? 'relative h-full' : ''}`} style={fixedInput ? {height: '100%'} : {}}>
       {!conversationId && !messages.length && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-2xl">
@@ -316,8 +316,8 @@ export default function ChatInterface({ conversationId, onNewConversation, fixed
             <div
               className={
                 (message.isUser
-                  ? 'bg-gradient-to-br from-white/10 to-neon-blue/20 rounded-3xl px-8 py-5 max-w-4xl shadow-xl backdrop-blur-md border border-white/10 text-white text-lg'
-                  : 'bg-gradient-to-br from-dark-secondary/80 to-neon-purple/20 rounded-3xl px-8 py-5 max-w-4xl shadow-xl backdrop-blur-md border border-white/10 text-gray-100 text-lg') + ' ml-4'
+                  ? 'bg-gradient-to-br from-white/10 to-neon-blue/20 rounded-3xl px-8 py-5 max-w-full shadow-xl backdrop-blur-md border border-white/10 text-white text-lg break-words'
+                  : 'bg-gradient-to-br from-dark-secondary/80 to-neon-purple/20 rounded-3xl px-8 py-5 max-w-full shadow-xl backdrop-blur-md border border-white/10 text-gray-100 text-lg break-words') + ' ml-4'
               }
               style={{ wordBreak: 'break-word' }}
             >
